@@ -151,7 +151,7 @@ public:
   */
   inline int key(int i, int j, int k) const
   {
-    return CellKey(k+NP[2]*(j+NP[1]*i));
+    return CellKey = k+NP[2]*(j+NP[1]*i);
   }
 
   /**get a index of a domain(i,j,k)
@@ -488,7 +488,7 @@ public:
   */
   inline int key(int i, int j) const
   {
-    return CellKey(j+NP[1]*i);
+    return CellKey = j+NP[1]*i;
   }
 
   /**get a index of a domain(i,j)

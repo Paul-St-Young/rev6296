@@ -2,6 +2,8 @@
 #define QMCPLUSPLUS_CLOCK_H
 
 #include "Message/OpenMP.h"
+#include <sys/time.h>
+#include <cstddef>
 
 #if defined(__bgp__)
 #include <dcmf.h>

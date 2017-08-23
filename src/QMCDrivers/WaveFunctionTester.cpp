@@ -117,9 +117,11 @@ WaveFunctionTester::run()
   else if (wftricks =="plot")
     runNodePlot();
   else
+  {
     runBasicTest();
 
     runRatioV();
+  }
 
   //RealType ene = H.evaluate(W);
   //app_log() << " Energy " << ene << endl;

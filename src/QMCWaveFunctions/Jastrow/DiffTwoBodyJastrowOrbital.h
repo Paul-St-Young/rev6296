@@ -49,6 +49,8 @@ class DiffTwoBodyJastrowOrbital: public DiffOrbitalBase
   std::map<std::string,FT*> J2Unique;
   ParticleSet* PtclRef;
 
+  std::vector<RealType> species_mass; // mass of each group(species) of particles
+
 public:
 
   ///constructor
@@ -58,6 +60,19 @@ public:
     NumPtcls=p.getTotalNum();
     NumGroups=p.groups();
     F.resize(NumGroups*NumGroups,0);
+
+    // save particle masses
+    SpeciesSet& species(p.getSpeciesSet());
+    if (species.size()!=NumGroups)
+    {
+      APP_ABORT("mismatch between species set and number of groups");
+    }
+    int mass_idx = species.getAttribute("mass");
+    species_mass.resize(NumGroups);
+    for (int ispec=0;ispec<NumGroups;ispec++)
+    {
+      species_mass[ispec] = species(mass_idx,ispec);
+    }
   }
 
   ~DiffTwoBodyJastrowOrbital()
@@ -248,9 +263,15 @@ public:
         if (rcsingles[k])
         {
           dlogpsi[kk]=dLogPsi[k];
-          dhpsioverpsi[kk]=-0.5*Sum(*lapLogPsi[k])-Dot(P.G,*gradLogPsi[k]);
+          ValueType kinetic = 0.0; // change in kinetic energy due to change in parameter kk
+          for (int iptcl=0;iptcl<NumPtcls;iptcl++)
+          {
+            int igroup = PtclRef->GroupID(iptcl);
+            kinetic -= 1./(2.*species_mass[igroup])*(*lapLogPsi[k])[iptcl];
+            kinetic -= 1./(species_mass[igroup])*dot(P.G[iptcl],(*gradLogPsi[k])[iptcl]);
+          }
+          dhpsioverpsi[kk] = kinetic;
         }
-        //optVars.setDeriv(p,dLogPsi[ip],-0.5*Sum(*lapLogPsi[ip])-Dot(P.G,*gradLogPsi[ip]));
       }
     }
   }

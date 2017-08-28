@@ -39,6 +39,16 @@ DiracDeterminantWithBackflow::DiracDeterminantWithBackflow(ParticleSet &ptcl, SP
   BFTrans=BF;
   NumParticles = ptcl.getTotalNum();
   NP=0;
+  
+  // save particle masses
+  SpeciesSet& species(ptcl.getSpeciesSet());
+  int mass_idx = species.getAttribute("mass");
+  species_mass.resize(ptcl.groups());
+  for (int ispec=0;ispec<ptcl.groups();ispec++)
+  {
+    species_mass[ispec] = species(mass_idx,ispec);
+  }
+
 }
 
 ///default destructor
@@ -875,6 +885,7 @@ DiracDeterminantWithBackflow::evaluateDerivatives(ParticleSet& P,
    *       -psiM_inv
    *       -Fmat
    */
+
   if(!usingDerivBuffer)
   {
 //       must compute if didn;t call earlier function
@@ -941,16 +952,20 @@ DiracDeterminantWithBackflow::evaluateDerivatives(ParticleSet& P,
     }
     for(int j=0; j<NumPtcls; j++)
     {
+      int gid = P.GroupID(j);
+      RealType mass = species_mass[gid];
       GradType B_j;
       B_j=0;
       for(int i=0; i<num; i++)
         B_j += BFTrans->Bmat_full(i,FirstIndex+j);
       dLa += (rcdot(Fmat(j,j),BFTrans->Ymat(pa,FirstIndex+j)) +
-              dot(B_j,dFa(j,j)));
+              dot(B_j,dFa(j,j)))/mass;
       dpsia += rcdot(Fmat(j,j),BFTrans->Cmat(pa,FirstIndex+j));
     }
     for(int j=0; j<NumPtcls; j++)
     {
+      int gid = P.GroupID(j);
+      RealType mass = species_mass[gid];
       HessType a_j_prime;
       a_j_prime=0;
       for(int i=0; i<num; i++)
@@ -971,10 +986,12 @@ DiracDeterminantWithBackflow::evaluateDerivatives(ParticleSet& P,
                                     ) - rcdot(BFTrans->Cmat(pa,FirstIndex+k),Fmat(j,k))
                        *Qmat(k,j) );
       }
-      dLa += (traceAtB(a_j_prime,Qmat(j,j)) + traceAtB(Ajk_sum(j,j),q_j_prime));
+      dLa += (traceAtB(a_j_prime,Qmat(j,j)) + traceAtB(Ajk_sum(j,j),q_j_prime))/mass;
     }
     for(int j=0; j<NumPtcls; j++)
     {
+      int gid = P.GroupID(j);
+      RealType mass = species_mass[gid];
       for(int k=0; k<NumPtcls; k++)
       {
         HessType a_jk_prime;
@@ -983,9 +1000,16 @@ DiracDeterminantWithBackflow::evaluateDerivatives(ParticleSet& P,
           a_jk_prime += ( dot(transpose(BFTrans->Xmat(pa,i,FirstIndex+j)),BFTrans->Amat(i,FirstIndex+k)) + dot(transpose(BFTrans->Amat(i,FirstIndex+j)),BFTrans->Xmat(pa,i,FirstIndex+k)) );
         dLa -= (traceAtB(a_jk_prime, outerProduct(Fmat(k,j),Fmat(j,k)))
                 + traceAtB(Ajk_sum(j,k), outerProduct(dFa(k,j),Fmat(j,k))
-                           + outerProduct(Fmat(k,j),dFa(j,k)) ));
+                           + outerProduct(Fmat(k,j),dFa(j,k)) ))/mass;
       }  // k
     }   // j
+    ValueType dot_term = 0.0;
+    for (int j=0;j<NumPtcls;j++)
+    {
+      int gid = P.GroupID(j);
+      RealType mass = species_mass[gid];
+      dot_term += dot(P.G[j],Gtemp[j])/mass;
+    }
     //int kk = pa; //BFTrans->optIndexMap[pa];
     int kk = BFTrans->optIndexMap[pa];
 #if defined(QMC_COMPLEX)
@@ -993,7 +1017,8 @@ DiracDeterminantWithBackflow::evaluateDerivatives(ParticleSet& P,
     dhpsioverpsi[kk] -= real(0.5*dLa+Dot(P.G,Gtemp));
 #else
     dlogpsi[kk]+=dpsia;
-    dhpsioverpsi[kk] -= (0.5*dLa+Dot(P.G,Gtemp));
+    //dhpsioverpsi[kk] -= (0.5*dLa+Dot(P.G,Gtemp));
+    dhpsioverpsi[kk] -= (0.5*dLa+dot_term);
 #endif
   }
 }

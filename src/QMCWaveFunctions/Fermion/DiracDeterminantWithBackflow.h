@@ -237,6 +237,7 @@ public:
   void testDerivLi(ParticleSet& P, int pa);
   void testL(ParticleSet& P);
   void dummyEvalLi(ValueType& L1, ValueType& L2, ValueType& L3);
+  std::vector<RealType> species_mass;
 
 };
 

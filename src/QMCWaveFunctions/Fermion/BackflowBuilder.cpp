@@ -272,7 +272,10 @@ void BackflowBuilder::addOneBody(xmlNodePtr cur)
         bsp->print();
         dum->uniqueRadFun.push_back(bsp);
         offsets.push_back(tbf->numParams);
-        tbf->numParams += bsp->NumParams;
+        if (!bsp->notOpt)
+        {
+          tbf->numParams += bsp->NumParams;
+        }
         if(OHMMS::Controller->rank()==0 & i==0)
         {
             char fname[64];
@@ -366,7 +369,10 @@ void BackflowBuilder::addTwoBody(xmlNodePtr cur)
             bsp->myVars.setParameterType(optimize::BACKFLOW_P);
             tbf->addFunc(ia,ib,bsp);
             offsets.push_back(tbf->numParams);
-            tbf->numParams += bsp->NumParams;
+            if (!bsp->notOpt)
+            {
+              tbf->numParams += bsp->NumParams;
+            }
             if(OHMMS::Controller->rank()==0)
             {
               char fname[64];
